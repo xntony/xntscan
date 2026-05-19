@@ -5,7 +5,23 @@
   <img src="https://img.shields.io/badge/Security-FF0000?style=for-the-badge&logo=hackthebox&logoColor=white"/>
 </p>
 
-# xntscan
+<div align="center">
+
+```
+                       __                                            
+                      /  |                                           
+ __    __  _______   _$$ |_    _______   _______   ______   _______  
+/  \  /  |/       \ / $$   |  /       | /       | /      \ /       \ 
+$$  \/$$/ $$$$$$$  |$$$$$$/  /$$$$$$$/ /$$$$$$$/  $$$$$$  |$$$$$$$  |
+ $$  $$<  $$ |  $$ |  $$ | __$$      \ $$ |       /    $$ |$$ |  $$ |
+ /$$$$  \ $$ |  $$ |  $$ |/  |$$$$$$  |$$ \_____ /$$$$$$$ |$$ |  $$ |
+/$$/ $$  |$$ |  $$ |  $$  $$//     $$/ $$       |$$    $$ |$$ |  $$ |
+$$/   $$/ $$/   $$/    $$$$/ $$$$$$$/   $$$$$$$/  $$$$$$$/ $$/   $$/
+
+```
+
+</div>
+
 
 This security scanning tool provides comprehensive security analysis for web applications, with support for scanning projects and generating detailed reports on potential vulnerabilities.
 
