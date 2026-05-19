@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AppSec Triage Tool</title>
+<style>
+:root{--green:#00ff41;--amber:#ffb300;--red:#ff3c3c;--blue:#00bfff;--bg:#0a0a0a;--bg2:#111;--bg3:#1a1a1a;--bg4:#222;--border:#2a2a2a;--border2:#444;--text:#e0e0e0;--muted:#666;--font:'Courier New',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+header{border-bottom:2px solid var(--green);padding:10px 20px;display:flex;align-items:center;gap:12px;background:var(--bg);flex-shrink:0;z-index:10}
+.logo{color:var(--green);font-size:16px;font-weight:bold;letter-spacing:2px}
+.logo span{color:var(--amber)}
+.badge{background:var(--green);color:#000;font-size:9px;padding:2px 7px;font-weight:bold;letter-spacing:1px}
+.hdr-right{margin-left:auto;color:var(--muted);font-size:10px}
+
+.tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg2)}
+.tab{padding:9px 20px;cursor:pointer;font-size:10px;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);border-bottom:2px solid transparent;transition:all .15s}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--green);border-bottom-color:var(--green)}
+
+.app{display:flex;flex:1;overflow:hidden}
+.left-panel{flex:1;overflow-y:auto;border-right:1px solid var(--border)}
+.right-panel{width:320px;overflow-y:auto;background:var(--bg2);flex-shrink:0}
+
+.tab-content{display:none;height:100%;overflow-y:auto}
+.tab-content.active{display:flex}
+
+section{border-bottom:1px solid var(--border)}
+.sec-hdr{display:flex;align-items:center;gap:10px;padding:10px 18px;cursor:pointer;user-select:none;background:var(--bg2);border-bottom:1px solid var(--border);transition:background .15s}
+.sec-hdr:hover{background:var(--bg3)}
+.sec-num{color:var(--green);font-size:10px;font-weight:bold;min-width:22px}
+.sec-title{font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:1.5px;flex:1}
+.chev{color:var(--muted);font-size:12px;transition:transform .2s}
+.chev.open{transform:rotate(180deg);color:var(--green)}
+.sec-body{padding:16px 18px;display:none}
+.sec-body.open{display:block}
+
+.field{margin-bottom:12px}
+.field label{display:block;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+input[type=text],input[type=number],select,textarea{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--font);font-size:12px;padding:6px 9px;outline:none;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--green)}
+select option{background:var(--bg2)}
+textarea{resize:vertical;line-height:1.6}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+.sev-row,.status-row{display:flex;gap:6px;margin-bottom:12px}
+.sev-btn,.status-btn{flex:1;padding:6px 2px;border:1px solid var(--border);background:var(--bg);color:var(--muted);font-family:var(--font);font-size:9px;font-weight:bold;letter-spacing:1px;cursor:pointer;text-transform:uppercase;transition:all .15s}
+.sev-btn:hover,.status-btn:hover{border-color:var(--border2);color:var(--text)}
+.sev-btn.active.info{border-color:var(--blue);color:var(--blue);background:#00bfff11}
+.sev-btn.active.low{border-color:var(--green);color:var(--green);background:#00ff4111}
+.sev-btn.active.medium{border-color:var(--amber);color:var(--amber);background:#ffb30011}
+.sev-btn.active.high{border-color:#ff7700;color:#ff7700;background:#ff770011}
+.sev-btn.active.critical{border-color:var(--red);color:var(--red);background:#ff3c3c11}
+.status-btn.active{border-color:var(--green);color:var(--green);background:#00ff4111}
+
+.tag-wrap{display:flex;gap:6px;margin-bottom:6px}
+.tag-wrap input{flex:1}
+.add-btn{background:var(--bg3);border:1px solid var(--border);color:var(--green);font-family:var(--font);font-size:16px;padding:0 10px;cursor:pointer}
+.tags{display:flex;flex-wrap:wrap;gap:5px}
+.tag{background:var(--bg3);border:1px solid var(--border);color:var(--green);font-size:9px;padding:3px 7px;display:flex;align-items:center;gap:5px}
+.tag-x{cursor:pointer;color:var(--muted);font-size:11px}
+.tag-x:hover{color:var(--red)}
+
+.action-bar{padding:12px 18px;display:flex;gap:8px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0}
+.btn{background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--font);font-size:10px;padding:7px 12px;cursor:pointer;text-transform:uppercase;letter-spacing:1px;transition:all .15s;white-space:nowrap}
+.btn:hover{border-color:var(--border2);background:var(--bg3)}
+.btn.primary{border-color:var(--green);color:var(--green)}
+.btn.primary:hover{background:#00ff4111}
+.btn.amber{border-color:var(--amber);color:var(--amber)}
+.btn.amber:hover{background:#ffb30011}
+.btn.danger{border-color:var(--red);color:var(--red)}
+.btn.danger:hover{background:#ff3c3c11}
+
+.cvss-disp{margin-top:8px;padding:8px 12px;border:1px solid var(--border);background:var(--bg);display:none;align-items:center;gap:12px}
+.cvss-num{font-size:26px;font-weight:bold}
+.cvss-num.info{color:var(--blue)}.cvss-num.low{color:var(--green)}.cvss-num.medium{color:var(--amber)}.cvss-num.high{color:#ff7700}.cvss-num.critical{color:var(--red)}
+.cvss-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+
+.rp-hdr{padding:12px 14px;border-bottom:1px solid var(--border);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;display:flex;align-items:center;gap:8px}
+.rp-hdr span{color:var(--amber)}
+.prompt-cards{padding:10px;display:flex;flex-direction:column;gap:8px}
+.pc{background:var(--bg3);border:1px solid var(--border);padding:10px;cursor:pointer;transition:border-color .15s;position:relative}
+.pc:hover{border-color:var(--amber)}
+.pc:hover .pc-title{color:var(--amber)}
+.pc-tag{font-size:8px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;margin-bottom:5px}
+.pc-tag.red{color:var(--red)}.pc-tag.grn{color:var(--green)}.pc-tag.amb{color:var(--amber)}.pc-tag.blu{color:var(--blue)}
+.pc-title{font-size:10px;font-weight:bold;color:var(--text);margin-bottom:4px;line-height:1.4;letter-spacing:.5px}
+.pc-body{font-size:9px;color:var(--muted);line-height:1.5}
+.pc-count{position:absolute;top:8px;right:8px;background:var(--bg4);border:1px solid var(--border);color:var(--amber);font-size:9px;padding:2px 6px}
+
+/* RECORDS TAB */
+.records-panel{flex:1;overflow-y:auto;padding:16px}
+.no-records{color:var(--muted);font-size:11px;text-align:center;margin-top:60px;line-height:2}
+.record-card{background:var(--bg2);border:1px solid var(--border);margin-bottom:10px;overflow:hidden}
+.rc-hdr{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer}
+.rc-hdr:hover{background:var(--bg3)}
+.rc-id{font-size:9px;color:var(--muted)}
+.rc-title{font-size:11px;font-weight:bold;flex:1}
+.rc-sev{font-size:9px;font-weight:bold;padding:2px 8px;border:1px solid}
+.rc-sev.critical{color:var(--red);border-color:var(--red)}
+.rc-sev.high{color:#ff7700;border-color:#ff7700}
+.rc-sev.medium{color:var(--amber);border-color:var(--amber)}
+.rc-sev.low{color:var(--green);border-color:var(--green)}
+.rc-sev.info{color:var(--blue);border-color:var(--blue)}
+.rc-status{font-size:9px;color:var(--muted)}
+.rc-body{padding:12px 14px;display:none;font-size:11px;line-height:1.8;border-top:1px solid var(--border)}
+.rc-body.open{display:block}
+.rc-body table{width:100%;border-collapse:collapse;margin-bottom:10px}
+.rc-body td{padding:3px 8px;border:1px solid var(--border);vertical-align:top}
+.rc-body td:first-child{color:var(--muted);font-size:10px;width:130px}
+.rc-actions{display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.records-bar{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;background:var(--bg2)}
+.rec-count{margin-left:auto;font-size:10px;color:var(--muted)}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border2);width:100%;max-width:680px;max-height:85vh;display:flex;flex-direction:column}
+.modal-hdr{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.modal-tag{font-size:9px;font-weight:bold;letter-spacing:1px;text-transform:uppercase}
+.modal-tag.red{color:var(--red)}.modal-tag.grn{color:var(--green)}.modal-tag.amb{color:var(--amber)}.modal-tag.blu{color:var(--blue)}
+.modal-title{font-size:13px;font-weight:bold;flex:1}
+.modal-close{background:none;border:1px solid var(--border);color:var(--muted);font-family:var(--font);font-size:14px;padding:3px 9px;cursor:pointer}
+.modal-close:hover{border-color:var(--red);color:var(--red)}
+.modal-body{overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.mprompt{background:var(--bg3);border:1px solid var(--border);padding:12px}
+.mprompt-lbl{font-size:9px;color:var(--amber);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+.mprompt-text{font-size:11px;line-height:1.7;color:var(--text);white-space:pre-wrap;word-break:break-word}
+.copy-mp-btn{background:var(--bg);border:1px solid var(--border);color:var(--muted);font-family:var(--font);font-size:9px;padding:3px 8px;cursor:pointer}
+.copy-mp-btn:hover{border-color:var(--green);color:var(--green)}
+.copy-mp-btn.copied{color:var(--green);border-color:var(--green)}
+
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">APPSEC<span>::</span>TRIAGE</div>
+  <div class="badge">v2.0</div>
+  <div class="hdr-right" id="hts">PARROT OS</div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('form',this)">▶ Report Builder</div>
+  <div class="tab" onclick="switchTab('records',this)">⊞ Records <span id="rec-badge" style="color:var(--amber)"></span></div>
+</div>
+
+<!-- TAB: FORM -->
+<div class="tab-content active" id="tab-form">
+  <div class="left-panel">
+    <div class="action-bar">
+      <button class="btn primary" onclick="saveRecord()">+ Save Record</button>
+      <button class="btn amber" onclick="downloadJSON()">↓ Download JSON</button>
+      <button class="btn danger" onclick="clearForm()">✕ Clear</button>
+    </div>
+
+    <section>
+      <div class="sec-hdr" onclick="tog(this)">
+        <span class="sec-num">01</span>
+        <span class="sec-title">Finding Metadata</span>
+        <span class="chev open">▼</span>
+      </div>
+      <div class="sec-body open">
+        <div class="field"><label>Vulnerability Title</label><input type="text" id="f-title" placeholder="e.g. Hardcoded Auth Token in VCS History"></div>
+        <div class="field"><label>Severity</label>
+          <div class="sev-row">
+            <button class="sev-btn info" onclick="setSev(this,'info')">Info</button>
+            <button class="sev-btn low" onclick="setSev(this,'low')">Low</button>
+            <button class="sev-btn medium" onclick="setSev(this,'medium')">Medium</button>
+            <button class="sev-btn high" onclick="setSev(this,'high')">High</button>
+            <button class="sev-btn critical active critical" onclick="setSev(this,'critical')">Critical</button>
+          </div>
+        </div>
+        <div class="field"><label>Status</label>
+          <div class="status-row">
+            <button class="status-btn" onclick="setStatus(this)">Open</button>
+            <button class="status-btn" onclick="setStatus(this)">In Progress</button>
+            <button class="status-btn active" onclick="setStatus(this)">Remediated</button>
+            <button class="status-btn" onclick="setStatus(this)">Accepted Risk</button>
+          </div>
+        </div>
+        <div class="g3">
+          <div class="field"><label>CWE</label><input type="text" id="f-cwe" placeholder="CWE-798"></div>
+          <div class="field"><label>OWASP</label><input type="text" id="f-owasp" placeholder="A07:2021"></div>
+          <div class="field"><label>CVSS v3.1</label><input type="number" id="f-cvss" placeholder="9.1" min="0" max="10" step="0.1" oninput="updCvss()"></div>
+        </div>
+        <div class="cvss-disp" id="cvss-disp">
+          <div><div class="cvss-num" id="cvss-n">9.1</div></div>
+          <div><div style="font-weight:bold;font-size:12px" id="cvss-sl">CRITICAL</div><div class="cvss-lbl">CVSS v3.1 Base Score</div></div>
+        </div>
+        <div class="field" style="margin-top:10px"><label>CVSS Vector</label><input type="text" id="f-vector" placeholder="AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N"></div>
+        <div class="g2">
+          <div class="field"><label>Repository / Asset</label><input type="text" id="f-repo" placeholder="highloadBanking"></div>
+          <div class="field"><label>Auditor</label><input type="text" id="f-auditor" placeholder="Antony M."></div>
+        </div>
+        <div class="field"><label>Affected Components</label>
+          <div class="tag-wrap"><input type="text" id="tag-inp" placeholder="auth, .env, git history" onkeydown="if(event.key==='Enter')addTag()"><button class="add-btn" onclick="addTag()">+</button></div>
+          <div class="tags" id="tags"></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-hdr" onclick="tog(this)">
+        <span class="sec-num">02</span>
+        <span class="sec-title">Vulnerability Description</span>
+        <span class="chev">▼</span>
+      </div>
+      <div class="sec-body">
+        <div class="field"><label>Description</label><textarea id="f-desc" rows="5" placeholder="Describe the vulnerability..."></textarea></div>
+        <div class="field"><label>Detection Method / Evidence</label><textarea id="f-evidence" rows="3" placeholder="How it was found..."></textarea></div>
+        <div class="field"><label>Root Cause</label><textarea id="f-rootcause" rows="3" placeholder="Why it exists..."></textarea></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-hdr" onclick="tog(this)">
+        <span class="sec-num">03</span>
+        <span class="sec-title">Impact Assessment</span>
+        <span class="chev">▼</span>
+      </div>
+      <div class="sec-body">
+        <div class="g2">
+          <div class="field"><label>Confidentiality</label><select id="f-conf"><option>None</option><option>Low</option><option selected>High</option></select></div>
+          <div class="field"><label>Integrity</label><select id="f-integ"><option>None</option><option>Low</option><option selected>High</option></select></div>
+          <div class="field"><label>Availability</label><select id="f-avail"><option selected>None</option><option>Low</option><option>High</option></select></div>
+          <div class="field"><label>Blast Radius</label><select id="f-blast"><option>Contained</option><option>Limited</option><option selected>Broad</option><option>Systemic</option></select></div>
+        </div>
+        <div class="field"><label>Impact Narrative</label><textarea id="f-impact" rows="4" placeholder="Real-world consequence if exploited..."></textarea></div>
+        <div class="field"><label>Residual Risk</label><textarea id="f-residual" rows="3" placeholder="Risk remaining after remediation..."></textarea></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-hdr" onclick="tog(this)">
+        <span class="sec-num">04</span>
+        <span class="sec-title">Remediation</span>
+        <span class="chev">▼</span>
+      </div>
+      <div class="sec-body">
+        <div class="field"><label>Actions Taken</label><textarea id="f-remediation" rows="4" placeholder="Steps already performed..."></textarea></div>
+        <div class="field"><label>Preventive Recommendations</label><textarea id="f-recommendations" rows="4" placeholder="Controls to prevent recurrence..."></textarea></div>
+        <div class="field"><label>References</label><textarea id="f-refs" rows="3" placeholder="CWE links, OWASP, NIST..."></textarea></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="right-panel">
+    <div class="rp-hdr"><span>▣</span> AI AGENT PROMPTS</div>
+    <div class="prompt-cards" id="prompt-cards"></div>
+  </div>
+</div>
+
+<!-- TAB: RECORDS -->
+<div class="tab-content" id="tab-records">
+  <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+    <div class="records-bar">
+      <button class="btn primary" onclick="switchTab('form',document.querySelectorAll('.tab')[0])">+ New Record</button>
+      <button class="btn amber" onclick="downloadJSON()">↓ Download JSON</button>
+      <span class="rec-count" id="rec-count-lbl">0 records</span>
+    </div>
+    <div class="records-panel" id="records-panel">
+      <div class="no-records" id="no-records">// NO RECORDS YET //<br><br>Fill the report builder and hit<br>[ + SAVE RECORD ] to log a finding.</div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal" id="modal-box">
+    <div class="modal-hdr">
+      <span class="modal-tag" id="m-tag"></span>
+      <span class="modal-title" id="m-title"></span>
+      <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    </div>
+    <div class="modal-body" id="m-body"></div>
+  </div>
+</div>
+
+<script>
+const PROMPTS=[
+  {tag:'red',tl:'⬛ FULL TRIAGE',title:'Full Triage from Code + Metadata',body:'Generate a complete triage report given source code and vulnerability metadata.',
+   prompts:[
+    {lbl:'Standard — with code context',text:`You are an application security auditor. Given:
+
+[CONTEXT CODE]
+\`\`\`
+<paste code here>
+\`\`\`
+
+Vulnerability metadata:
+- CWE: <e.g. CWE-798>
+- OWASP: <e.g. A07:2021>
+- CVSS v3.1: <e.g. 9.1 Critical>
+- Affected asset: <repo/component>
+
+Produce a professional triage report with:
+1. Vulnerability Description
+2. Impact Assessment (C/I/A + Blast Radius)
+3. Root Cause Analysis
+4. Remediation Actions
+5. Preventive Recommendations
+6. Residual Risk
+
+Be precise, technical, and auditor-grade in tone.`},
+    {lbl:'No code — description only',text:`You are an AppSec auditor. Given only a description of a vulnerability and its metadata, produce a full triage report.
+
+Description: <paste here>
+CWE: <e.g. CWE-89>
+OWASP: <e.g. A03:2021>
+CVSS: <score>
+Asset: <name>
+
+Sections needed: Description, Impact Assessment, Root Cause, Remediation, Residual Risk.`},
+    {lbl:'CI/CD pipeline context',text:`You are an AppSec engineer reviewing a CI/CD pipeline finding.
+
+Pipeline: <GitHub Actions / GitLab CI / Jenkins>
+Finding: <describe the issue>
+CWE: <CWE-ID>
+CVSS: <score>
+
+Produce triage report with emphasis on pipeline-specific remediation and secrets management controls.`}
+  ]},
+  {tag:'amb',tl:'⬛ CVSS SCORING',title:'CVSS v3.1 Score Derivation',body:'Derive a CVSS vector and score from vulnerability details with metric-by-metric justification.',
+   prompts:[
+    {lbl:'From vulnerability description',text:`You are a security scoring analyst. Given this vulnerability:
+
+[DESCRIPTION]
+<paste vulnerability description>
+
+Derive the CVSS v3.1 base score:
+- Attack Vector (AV), Attack Complexity (AC)
+- Privileges Required (PR), User Interaction (UI)
+- Scope (S)
+- Confidentiality (C), Integrity (I), Availability (A)
+
+Output: full vector string, numeric score, severity rating, one-sentence justification per metric.`},
+    {lbl:'Compare two scoring interpretations',text:`You are a CVSS analyst. Two engineers scored the same vulnerability differently. Adjudicate:
+
+Engineer A vector: <AV:N/AC:L/...>
+Engineer B vector: <AV:A/AC:H/...>
+Vulnerability: <description>
+
+Explain which is correct and why, metric by metric.`}
+  ]},
+  {tag:'grn',tl:'⬛ REMEDIATION',title:'Stack-Specific Remediation Generator',body:'Get prioritized fix steps with code examples for any CWE in your stack.',
+   prompts:[
+    {lbl:'Standard remediation plan',text:`You are an AppSec engineer.
+
+CWE: <e.g. CWE-89>
+Stack: <e.g. Node.js / PostgreSQL / Express>
+Context: <how it manifests>
+
+Produce:
+1. Immediate containment (< 1 hour)
+2. Short-term fix with corrected code snippet
+3. Long-term architectural recommendation
+4. Pre-commit / CI control to prevent recurrence
+5. Verification steps to confirm fix`},
+    {lbl:'Git history secret remediation',text:`You are an AppSec engineer. A secret was found in git history.
+
+Secret type: <API key / PAT / password / cert>
+Platform: <GitHub / GitLab / Bitbucket>
+Repo visibility: <public / private>
+Stack: <languages and tooling>
+
+Provide:
+1. Immediate rotation steps on the issuing platform
+2. git filter-repo commands to scrub history
+3. Force push procedure
+4. Post-remediation verification
+5. Pre-commit hooks to prevent recurrence`},
+    {lbl:'Dependency vulnerability fix',text:`You are an AppSec engineer.
+
+Vulnerable package: <name@version>
+CVE: <CVE-ID>
+CWE: <CWE-ID>
+CVSS: <score>
+Package manager: <npm / pip / maven / cargo>
+
+Produce: safe version to upgrade to, migration notes, any breaking change warnings, and a one-liner CI check to enforce the minimum version.`}
+  ]},
+  {tag:'blu',tl:'⬛ IMPACT ANALYSIS',title:'Blast Radius & Business Impact',body:'Assess real-world impact across C/I/A and business dimensions.',
+   prompts:[
+    {lbl:'Technical + business impact',text:`You are an AppSec risk analyst.
+
+Vulnerability: <title / CWE>
+Severity: <CVSS score>
+Asset: <system or repo name>
+System context: <what it does, who uses it>
+
+Produce:
+1. Technical impact (C / I / A breakdown)
+2. Blast radius (contained / limited / broad / systemic)
+3. Business impact (data exposure, regulatory, reputational)
+4. Threat actor motivation to exploit this
+5. Residual risk after remediation`},
+    {lbl:'Regulatory / compliance angle',text:`You are a compliance-aware AppSec analyst.
+
+Vulnerability: <description>
+Industry: <fintech / healthcare / e-commerce / SaaS>
+Jurisdiction: <Kenya / EU / US / global>
+
+Assess:
+1. Which regulations are implicated (PCI-DSS, GDPR, Kenya DPA, HIPAA, etc.)
+2. Potential fine / penalty exposure
+3. Breach notification obligations
+4. Recommended disclosure approach`}
+  ]},
+  {tag:'red',tl:'⬛ DIFF REVIEW',title:'Security Audit a Git Diff',body:'Paste a diff or code snippet for a targeted security review.',
+   prompts:[
+    {lbl:'Full security review',text:`You are performing a security code review. Analyze:
+
+\`\`\`diff
+<paste git diff or code here>
+\`\`\`
+
+Identify:
+1. Secrets / credentials (CWE-798, CWE-312)
+2. Injection vectors (SQLi, CMDi, XSS — CWE-89, 78, 79)
+3. Auth / authz issues (CWE-287, 285)
+4. Insecure configs or defaults
+5. Any other security-relevant findings
+
+For each: CWE, severity (CRITICAL/HIGH/MEDIUM/LOW), affected line(s), recommended fix.`},
+    {lbl:'Node.js / Express focused',text:`Review this Node.js/Express code for security issues:
+
+\`\`\`js
+<paste code here>
+\`\`\`
+
+Focus on: hardcoded secrets, SQL/NoSQL injection, JWT misuse, missing input validation, insecure headers, prototype pollution, path traversal.
+
+Output as a finding table: Issue | CWE | Severity | Line | Fix.`}
+  ]},
+  {tag:'amb',tl:'⬛ EXEC SUMMARY',title:'Executive Summary Compression',body:'Distill a full triage into a 5-line non-technical executive brief.',
+   prompts:[
+    {lbl:'CTO / board audience',text:`You are a senior security consultant briefing a non-technical executive.
+
+[REPORT]
+<paste full triage report here>
+
+Write a 5-line executive summary:
+1. What was found (plain language)
+2. What could happen if exploited
+3. How serious it is and why
+4. What was done to fix it
+5. What guardrails are now in place
+
+No acronyms, no CWE/CVE IDs, no technical commands.`},
+    {lbl:'Slack / email format',text:`Compress this security finding into a Slack message for a dev team lead.
+
+Finding: <paste triage summary>
+
+Format:
+🔴 SEVERITY | TITLE
+What: one sentence
+Risk: one sentence
+Fixed: yes/no + one sentence on how
+Action needed from team: one sentence`}
+  ]},
+  {tag:'grn',tl:'⬛ CWE LOOKUP',title:'CWE Deep Dive with Stack Examples',body:'Get a precise explanation, real attack scenario, and stack-specific mitigation for any CWE.',
+   prompts:[
+    {lbl:'Standard deep dive',text:`Explain CWE-<NUMBER> in the context of a <STACK e.g. Node.js/Express/PostgreSQL> application.
+
+Include:
+1. Plain-language definition
+2. How it manifests in <STACK>
+3. Realistic attack scenario
+4. Vulnerable code example
+5. Fixed code example
+6. Detection: how to find it via code review or tooling`},
+    {lbl:'Compare two related CWEs',text:`Compare CWE-<A> and CWE-<B>:
+1. Core difference in the weakness
+2. How they differ in exploitation
+3. Do they share remediation or need separate fixes?
+4. Which is higher risk in a <STACK> context and why?`}
+  ]}
+];
+
+let sevState='critical', statusState='Remediated';
+const tags=[], records=[];
+let editingId=null;
+
+function switchTab(id, el){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  el.classList.add('active');
+  if(id==='records') renderRecords();
+}
+
+function tog(hdr){
+  const b=hdr.nextElementSibling, c=hdr.querySelector('.chev');
+  const o=b.classList.toggle('open');
+  c.classList.toggle('open',o);
+}
+
+function setSev(btn,s){
+  document.querySelectorAll('.sev-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); sevState=s;
+}
+function setStatus(btn){
+  document.querySelectorAll('.status-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); statusState=btn.textContent;
+}
+
+function updCvss(){
+  const v=parseFloat(document.getElementById('f-cvss').value);
+  const d=document.getElementById('cvss-disp');
+  if(isNaN(v)){d.style.display='none';return;}
+  d.style.display='flex';
+  const n=document.getElementById('cvss-n'), l=document.getElementById('cvss-sl');
+  n.textContent=v.toFixed(1);
+  let cls,lbl;
+  if(v===0){cls='info';lbl='NONE';}
+  else if(v<4){cls='low';lbl='LOW';}
+  else if(v<7){cls='medium';lbl='MEDIUM';}
+  else if(v<9){cls='high';lbl='HIGH';}
+  else{cls='critical';lbl='CRITICAL';}
+  n.className='cvss-num '+cls; l.textContent=lbl;
+}
+
+function addTag(){
+  const i=document.getElementById('tag-inp'), v=i.value.trim();
+  if(!v||tags.includes(v))return;
+  tags.push(v); renderTags(); i.value='';
+}
+function removeTag(t){tags.splice(tags.indexOf(t),1);renderTags();}
+function renderTags(){
+  document.getElementById('tags').innerHTML=tags.map(t=>
+    `<span class="tag">${t}<span class="tag-x" onclick="removeTag('${t}')">✕</span></span>`
+  ).join('');
+}
+
+function g(id){return document.getElementById(id)?.value?.trim()||'';}
+
+function collectForm(){
+  return {
+    id:'APPSEC-'+new Date().getFullYear()+'-'+String(records.length+1).padStart(3,'0'),
+    date:new Date().toISOString().split('T')[0],
+    title:g('f-title')||'[Untitled]',
+    severity:sevState,
+    status:statusState,
+    cwe:g('f-cwe'), owasp:g('f-owasp'),
+    cvss:g('f-cvss'), cvssVector:g('f-vector'),
+    repo:g('f-repo'), auditor:g('f-auditor'),
+    tags:[...tags],
+    description:g('f-desc'), evidence:g('f-evidence'), rootCause:g('f-rootcause'),
+    confidentiality:document.getElementById('f-conf').value,
+    integrity:document.getElementById('f-integ').value,
+    availability:document.getElementById('f-avail').value,
+    blastRadius:document.getElementById('f-blast').value,
+    impactNarrative:g('f-impact'), residualRisk:g('f-residual'),
+    remediation:g('f-remediation'), recommendations:g('f-recommendations'),
+    references:g('f-refs')
+  };
+}
+
+function saveRecord(){
+  const r=collectForm();
+  if(editingId){
+    const idx=records.findIndex(x=>x.id===editingId);
+    if(idx>=0){r.id=editingId; records[idx]=r;}
+    editingId=null;
+  } else {
+    records.push(r);
+  }
+  updateBadge();
+  const btn=document.querySelector('.btn.primary');
+  const orig=btn.textContent; btn.textContent='✓ SAVED';
+  setTimeout(()=>btn.textContent=orig,1500);
+}
+
+function updateBadge(){
+  const n=records.length;
+  document.getElementById('rec-badge').textContent=n?`(${n})`:'';
+  document.getElementById('rec-count-lbl').textContent=`${n} record${n!==1?'s':''}`;
+}
+
+function renderRecords(){
+  const p=document.getElementById('records-panel');
+  const no=document.getElementById('no-records');
+  if(!records.length){no.style.display='block'; return;}
+  no.style.display='none';
+  p.innerHTML='';
+  records.forEach((r,i)=>{
+    const d=document.createElement('div');
+    d.className='record-card';
+    d.innerHTML=`
+      <div class="rc-hdr" onclick="togRec(this)">
+        <span class="rc-id">${r.id}</span>
+        <span class="rc-title">${r.title}</span>
+        <span class="rc-sev ${r.severity}">${r.severity.toUpperCase()}</span>
+        <span class="rc-status">${r.status}</span>
+        <span style="color:var(--muted);font-size:12px;margin-left:6px">▼</span>
+      </div>
+      <div class="rc-body">
+        <table>
+          <tr><td>Date</td><td>${r.date}</td></tr>
+          <tr><td>Auditor</td><td>${r.auditor||'—'}</td></tr>
+          <tr><td>CWE</td><td>${r.cwe||'—'}</td></tr>
+          <tr><td>OWASP</td><td>${r.owasp||'—'}</td></tr>
+          <tr><td>CVSS</td><td>${r.cvss||'—'} ${r.cvssVector?'| '+r.cvssVector:''}</td></tr>
+          <tr><td>Repository</td><td>${r.repo||'—'}</td></tr>
+          <tr><td>Components</td><td>${r.tags.join(', ')||'—'}</td></tr>
+          <tr><td>C / I / A</td><td>${r.confidentiality} / ${r.integrity} / ${r.availability}</td></tr>
+          <tr><td>Blast Radius</td><td>${r.blastRadius}</td></tr>
+          ${r.description?`<tr><td>Description</td><td>${r.description}</td></tr>`:''}
+          ${r.rootCause?`<tr><td>Root Cause</td><td>${r.rootCause}</td></tr>`:''}
+          ${r.impactNarrative?`<tr><td>Impact</td><td>${r.impactNarrative}</td></tr>`:''}
+          ${r.remediation?`<tr><td>Remediation</td><td>${r.remediation}</td></tr>`:''}
+          ${r.residualRisk?`<tr><td>Residual Risk</td><td>${r.residualRisk}</td></tr>`:''}
+        </table>
+        <div class="rc-actions">
+          <button class="btn primary" onclick="loadRecord(${i})">✎ Edit</button>
+          <button class="btn danger" onclick="deleteRecord(${i})">✕ Delete</button>
+        </div>
+      </div>`;
+    p.appendChild(d);
+  });
+}
+
+function togRec(hdr){
+  const b=hdr.nextElementSibling;
+  b.classList.toggle('open');
+  const arr=hdr.querySelector('span:last-child');
+  arr.style.transform=b.classList.contains('open')?'rotate(180deg)':'';
+  arr.style.color=b.classList.contains('open')?'var(--green)':'var(--muted)';
+}
+
+function loadRecord(i){
+  const r=records[i]; editingId=r.id;
+  document.getElementById('f-title').value=r.title;
+  document.getElementById('f-cwe').value=r.cwe;
+  document.getElementById('f-owasp').value=r.owasp;
+  document.getElementById('f-cvss').value=r.cvss; updCvss();
+  document.getElementById('f-vector').value=r.cvssVector;
+  document.getElementById('f-repo').value=r.repo;
+  document.getElementById('f-auditor').value=r.auditor;
+  document.getElementById('f-desc').value=r.description;
+  document.getElementById('f-evidence').value=r.evidence;
+  document.getElementById('f-rootcause').value=r.rootCause;
+  document.getElementById('f-conf').value=r.confidentiality;
+  document.getElementById('f-integ').value=r.integrity;
+  document.getElementById('f-avail').value=r.availability;
+  document.getElementById('f-blast').value=r.blastRadius;
+  document.getElementById('f-impact').value=r.impactNarrative;
+  document.getElementById('f-residual').value=r.residualRisk;
+  document.getElementById('f-remediation').value=r.remediation;
+  document.getElementById('f-recommendations').value=r.recommendations;
+  document.getElementById('f-refs').value=r.references;
+  tags.length=0; r.tags.forEach(t=>tags.push(t)); renderTags();
+  document.querySelectorAll('.sev-btn').forEach(b=>{b.classList.remove('active'); if(b.classList.contains(r.severity))b.classList.add('active');});
+  sevState=r.severity;
+  document.querySelectorAll('.status-btn').forEach(b=>{b.classList.remove('active'); if(b.textContent===r.status)b.classList.add('active');});
+  statusState=r.status;
+  switchTab('form',document.querySelectorAll('.tab')[0]);
+}
+
+function deleteRecord(i){
+  records.splice(i,1);
+  updateBadge(); renderRecords();
+}
+
+function downloadJSON(){
+  if(!records.length){alert('No records saved yet. Fill the form and click [ + Save Record ] first.');return;}
+  const blob=new Blob([JSON.stringify({exported:new Date().toISOString(),count:records.length,records},null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`appsec-triage-${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+}
+
+function clearForm(){
+  ['f-title','f-cwe','f-owasp','f-cvss','f-vector','f-repo','f-auditor',
+   'f-desc','f-evidence','f-rootcause','f-impact','f-residual',
+   'f-remediation','f-recommendations','f-refs'].forEach(id=>{
+    const el=document.getElementById(id); if(el)el.value='';
+  });
+  tags.length=0; renderTags();
+  document.getElementById('cvss-disp').style.display='none';
+  editingId=null;
+}
+
+function openModal(i){
+  const p=PROMPTS[i];
+  document.getElementById('m-tag').textContent=p.tl;
+  document.getElementById('m-tag').className='modal-tag '+p.tag;
+  document.getElementById('m-title').textContent=p.title;
+  const body=document.getElementById('m-body');
+  body.innerHTML=p.prompts.map((pr,j)=>`
+    <div class="mprompt">
+      <div class="mprompt-lbl">
+        <span>${pr.lbl}</span>
+        <button class="copy-mp-btn" id="cpbtn-${i}-${j}" onclick="copyMp(${i},${j})">COPY</button>
+      </div>
+      <div class="mprompt-text">${pr.text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+    </div>`).join('');
+  document.getElementById('modal').classList.add('open');
+}
+
+function copyMp(i,j){
+  navigator.clipboard.writeText(PROMPTS[i].prompts[j].text).then(()=>{
+    const btn=document.getElementById(`cpbtn-${i}-${j}`);
+    btn.textContent='COPIED!'; btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='COPY';btn.classList.remove('copied');},1500);
+  });
+}
+
+function closeModal(e){if(e.target===document.getElementById('modal'))closeModalDirect();}
+function closeModalDirect(){document.getElementById('modal').classList.remove('open');}
+
+function renderPromptCards(){
+  const c=document.getElementById('prompt-cards');
+  c.innerHTML='';
+  PROMPTS.forEach((p,i)=>{
+    const d=document.createElement('div');
+    d.className='pc';
+    d.onclick=()=>openModal(i);
+    d.innerHTML=`
+      <div class="pc-tag ${p.tag}">${p.tl}</div>
+      <div class="pc-title">${p.title}</div>
+      <div class="pc-body">${p.body}</div>
+      <div class="pc-count">${p.prompts.length} prompt${p.prompts.length>1?'s':''}</div>`;
+    c.appendChild(d);
+  });
+}
+
+document.getElementById('hts').textContent='PARROT OS // '+new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}).toUpperCase();
+renderPromptCards();
+</script>
+</body>
+</html>
