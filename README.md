@@ -1,4 +1,11 @@
-# Security Scan Tool
+<p align="center">
+  <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white"/>
+  <img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black"/>
+  <img src="https://img.shields.io/badge/OWASP-000000?style=for-the-badge&logo=owasp&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Security-FF0000?style=for-the-badge&logo=hackthebox&logoColor=white"/>
+</p>
+
+# xntscan
 
 This security scanning tool provides comprehensive security analysis for web applications, with support for scanning projects and generating detailed reports on potential vulnerabilities.
 
