@@ -245,10 +245,7 @@ fi
 echo "================================================"
 echo "BONUS: ENTRY POINTS (Routes/Controllers)"
 echo "================================================"
-find "$PROJECT_DIR" -name "*.ts" -o -name "*.js" | xargs grep -rn \
-  "router\.\|app\.get\|app\.post\|app\.put\|app\.delete\|@Controller\|@Get\|@Post" \
-  --include="*.ts" --include="*.js" \
-  > "$OUTPUT_DIR/entry-points.txt" || true
+find "$PROJECT_DIR" \( -name "*.js" -o -name "*.ts" \) -type f -print0 | xargs -0 grep -E "router\.\|app\.(get|post|put|delete|use)\|@Controller|@Get|@Post" > "$OUTPUT_DIR/entry-points.txt" 2>/dev/null || true
 echo "✔ Entry points mapped → output/entry-points.txt"
 
 echo "================================================"
