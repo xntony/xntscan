@@ -99,7 +99,7 @@ echo "================================================"
 echo "1/9 GITLEAKS (Secrets)"
 echo "================================================"
 gitleaks detect --source "$PROJECT_DIR" \
-  --format json \
+  --report-format json \
   --report-path "$OUTPUT_DIR/gitleaks.json" || true
 
 
